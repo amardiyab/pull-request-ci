@@ -1,0 +1,43 @@
+name: Check Drizzle Migrations
+
+on:
+  pull_request:
+    branches:
+      - main
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+
+      - name: Setup Bun
+        uses: oven-sh/setup-bun@v2
+
+      # - name: Setup pnpm
+      #   uses: pnpm/action-setup@v6
+      #   with:
+      #     version: 11
+
+      - name: Install dependencies
+        # run: pnpm install
+        run: bun install
+
+      - name: Generate migrations
+        # run: pnpm db:generate
+        run: bun db:generate
+        env:
+          DATABASE_URL: ${{ secrets.DATABASE_URL }}
+
+      - name: Verify no new migrations were generated
+        run: |
+          new_migrations="$(git ls-files --others --exclude-standard drizzle/)"
+
+          if [[ -n "$new_migrations" ]]; then
+            echo "drizzle-kit generate created new migration files."
+            echo "Run 'bun/pnpm run db:generate' locally and commit the generated drizzle/ files."
+            echo "$new_migrations"
+            exit 1
+          fi
